@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be My Valentine?</title>
+    <style>
+        /* RESET */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ffdde1;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent; 
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #d6336c;
+            font-size: 2rem;
+            margin-bottom: 40px;
+            z-index: 10;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            height: 100px; 
+            position: relative;
+        }
+
+        button {
+            width: 140px; 
+            height: 60px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        #yesBtn {
+            background-color: #28a745;
+            color: white;
+            transition: transform 0.3s ease; 
+        }
+
+        #noBtn {
+            background-color: #dc3545;
+            color: white;
+            position: relative; 
+            /* THE SMOOTH DODGE ANIMATION */
+            transition: all 0.3s ease-out; 
+        }
+
+        /* HIDDEN SCREENS */
+        #successScreen, #catScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent; 
+            z-index: 100;
+        }
+
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            max-width: 1000px;
+        }
+
+        .gallery img {
+            width: 140px;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        #catImg {
+            width: 90%;
+            max-width: 400px;
+            border-radius: 15px;
+            border: 5px solid red;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="mainScreen" class="container">
+        <h1>Te puedo sacar a cenar para San Valentín? 🌹</h1>
+        <div class="buttons">
+            <button id="yesBtn">Sí</button>
+            <button id="noBtn">No</button>
+        </div>
+    </div>
+
+    <div id="successScreen">
+        <h1>Uiiiiii !!! Dime por Wha qué pusiste que no lo puedo ver HAHAHAHA</h1>
+        <div class="gif">
+            <img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif">
+        </div>
+    </div>
+
+    <div id="catScreen">
+        <h1 style="color: red;">Venga ya :'(</h1>
+        <img id="catImg" src="cat.png" alt="Cat with Gun">
+    </div>
+
+    <script>
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const mainScreen = document.getElementById('mainScreen');
+        const successScreen = document.getElementById('successScreen');
+        const catScreen = document.getElementById('catScreen');
+        
+        let timerRunning = false;
+        let timerId = null;
+        let mobileClickCount = 0; 
+
+        // Helper to detect mobile
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        // --- INTERACTION LOGIC ---
+        function handleInteraction(e) {
+            
+            if (isMobile()) {
+                // === MOBILE: CLICK TO SHRINK/GROW ===
+                if (e.type === 'mouseenter') return; // Ignore hover on mobile
+                e.preventDefault(); 
+                
+                mobileClickCount++;
+
+                if (mobileClickCount >= 3) {
+                    showCat();
+                } else {
+                    // Resize Buttons
+                    const scaleYes = 1 + (mobileClickCount * 0.4); 
+                    const scaleNo = 1 - (mobileClickCount * 0.2);
+                    yesBtn.style.transform = `scale(${scaleYes})`;
+                    noBtn.style.transform = `scale(${scaleNo})`;
+                }
+
+            } else {
+                // === PC: SMOOTH DODGE ===
+                // Only move on hover, OR click if they somehow catch it
+                moveButtonSmoothly();
+            }
+        }
+
+        // --- PC SMOOTH MOVEMENT MATH ---
+        function moveButtonSmoothly() {
+            // 1. Start 10s Timer
+            if (!timerRunning) {
+                timerRunning = true;
+                timerId = setTimeout(() => { showCat(); }, 10000); 
+            }
+
+            // 2. Make Fixed if not already
+            if (noBtn.style.position !== 'fixed') {
+                const rect = noBtn.getBoundingClientRect();
+                noBtn.style.position = 'fixed';
+                noBtn.style.left = rect.left + 'px';
+                noBtn.style.top = rect.top + 'px';
+            }
+
+            // 3. Get Current Position
+            const currentLeft = parseFloat(noBtn.style.left) || 0;
+            const currentTop = parseFloat(noBtn.style.top) || 0;
+
+            // 4. Calculate a "Jump" (Delta) instead of random teleport
+            // Move between 100px and 250px away
+            const minJump = 100; 
+            const maxJump = 250; 
+            
+            const dirX = Math.random() < 0.5 ? -1 : 1;
+            const dirY = Math.random() < 0.5 ? -1 : 1;
+
+            let moveX = (minJump + Math.random() * (maxJump - minJump)) * dirX;
+            let moveY = (minJump + Math.random() * (maxJump - minJump)) * dirY;
+
+            let newX = currentLeft + moveX;
+            let newY = currentTop + moveY;
+
+            // 5. Boundary Checks (Bounce off walls)
+            const btnWidth = noBtn.offsetWidth;
+            const btnHeight = noBtn.offsetHeight;
+            const pad = 20; 
+
+            // If goes off left/right
+            if (newX < pad) newX = window.innerWidth - btnWidth - pad - (Math.random()*50);
+            if (newX + btnWidth > window.innerWidth - pad) newX = pad + (Math.random()*50);
+            
+            // If goes off top/bottom
+            if (newY < pad) newY = window.innerHeight - btnHeight - pad - (Math.random()*50);
+            if (newY + btnHeight > window.innerHeight - pad) newY = pad + (Math.random()*50);
+
+            // 6. Apply with CSS transition
+            noBtn.style.left = newX + 'px';
+            noBtn.style.top = newY + 'px';
+        }
+
+        // Listeners
+        noBtn.addEventListener('mouseenter', handleInteraction); // PC Hover
+        noBtn.addEventListener('click', handleInteraction);      // PC Click / Mobile Tap
+        noBtn.addEventListener('touchstart', handleInteraction); // Mobile Tap
+
+        // Yes Button
+        yesBtn.addEventListener('click', () => {
+            if (timerId) clearTimeout(timerId);
+            mainScreen.style.display = 'none';
+            successScreen.style.display = 'flex';
+            document.body.style.backgroundColor = "#ffcdd2";
+        });
+
+        // Show Cat
+        function showCat() {
+            if (successScreen.style.display !== 'flex') {
+                mainScreen.style.display = 'none';
+                catScreen.style.display = 'flex';
+                document.body.style.backgroundColor = "black";
+                setTimeout(() => { resetGame(); }, 5000);
+            }
+        }
+
+        // Reset
+        function resetGame() {
+            catScreen.style.display = 'none';
+            mainScreen.style.display = 'flex';
+            document.body.style.backgroundColor = "#ffdde1";
+
+            timerRunning = false;
+            mobileClickCount = 0;
+            if (timerId) clearTimeout(timerId);
+
+            // Reset Positions & Scales
+            noBtn.style.position = 'relative';
+            noBtn.style.left = 'auto';
+            noBtn.style.top = 'auto';
+            noBtn.style.transform = 'scale(1)';
+            yesBtn.style.transform = 'scale(1)';
+        }
+    </script>
+</body>
+</html>
